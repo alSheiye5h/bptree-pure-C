@@ -58,12 +58,23 @@ typedef enum { // STATUS CODE RETURNED BY B+TREE FUNCTIONS
     BPTREE_INTERNAL_ERROR // internal consistency error
 } bptree_status;
 
+typedef struct bptree_node bptree_node;
 struct bptree_node {
     bool is_leaf; // if node is leaf return true
     int num_key; // number of keys stored in the node
     bptree_node* next; // pointer to the next leaf (range querie)
     char data[]; // flexible array member that holds keys and either values or child pointers
 };
+
+typedef struct bptree {
+    int count; // total number of key/value pair in the tree
+    int height; // current height of the tree
+    bool enable_debug; // if true debug message will be printed
+    int max_keys;   // maximum keys allowed in node
+    int min_leaf_keys;  // minimum keys nedded in a non root leaf node
+    int min_internal_keys; // minimum keys nedded in a non root internal node
+    bptree_node* root; // pointer to the root node of the tree
+} bptree;
 
 
 
