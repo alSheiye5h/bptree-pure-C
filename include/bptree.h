@@ -76,6 +76,17 @@ typedef struct bptree {
     bptree_node* root; // pointer to the root node of the tree
 } bptree;
 
+typedef struct bptree_stats {
+    int count;
+    int height;
+    int node_count;
+} bptree_stats;
+
+BPTREE_API bptree* bptree_create(int max_keys,
+                                 int (*compare)(const bptree_key_t*, const bptree_key_t*), // a function pointer, custom key comparison
+                                 bool enable_debug);
+
+
 
 
 
