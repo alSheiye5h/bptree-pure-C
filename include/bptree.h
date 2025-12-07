@@ -125,7 +125,7 @@ BPTREE_API bool bptree_check_invariants(const bptree* tree); // check the tree c
 
 BPTREE_API bool bptree_contains(const bptree* tree, const bptree_key_t* key); // check if the tree already contain the key
 
-#ifdef BPTREE_IMPLEMENTATION
+#ifdef BPTREE_IMPLEMENTATION // to implement the tree not only read
 
 static void bptree_debug_print(const bool enable, const char* fmt, ...) {
     if (!enable) return;
@@ -165,6 +165,26 @@ static bptree_node** bptree_node_children(bptree_node* node, const int max_keys)
     const size_t offset = bptree_keys_area_size(max_keys);
     return (bptree**)(node->data + offset)
 }
+
+#ifdef BPTREE_KEY_TYPE_STRING
+
+// comparing two keys as fixed-size strings
+static inline int bptree_default_compare(const bptree_key_t* a, const bptree_key_t* b) {
+    return memcmp(a->data, b->data, BPTREE_KEY_SIZE);
+}
+
+#else
+
+// comparing two numeric keys
+static int bptree_default_compare(const bptree_key_t* a, const bptree_key_t* b) {
+    return (*a < *b) ? -1 : ((*a > *b) ? 1 : 0);
+}
+
+#endif
+
+
+
+
 
 
 
