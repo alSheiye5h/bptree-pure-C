@@ -87,6 +87,28 @@ BPTREE_API bptree* bptree_create(int max_keys,
                                  bool enable_debug);
 
 
+BPTREE_API void bptree_free(bptree* tree);
+
+BPTREE_API bptree_status bptree_put(bptree* tree, const bptree_key_t* key, bptree_value_t value); // using const in key to ensure that the content of key which is value will not be modified
+
+BPTREE_API bptree_status bptree_get(const bptree* tree, const bptree_key_t* key, bptree_value_t* out);
+
+BPTREE_API bptree_status bptree_remove(bptree* tree, const bptree_key_t* key);
+
+BPTREE_API bptree_status bptree_get_range(const bptree* tree, const bptree* start, const bptree* end, bptree_value_t** out_values, int* n_results); // bptree_value_t** out_values: c cant return an array directly so it's a pointer to array which is a pointer
+
+BPTREE_API void bptree_free_range_results(bptree_value_t* results); // free the the out_values in bptree_get_range
+
+BPTREE_API bptree_stats bptree_get_stats(const bptree* tree); // stat of the tree which is predefined
+
+BPTREE_API bool bptree_check_invariants(const bptree* tree); // check the tree constraintes predefined and return true or false
+
+BPTREE_API bool bptree_contains(const bptree* tree, const bptree_key_t* key); // check if the tree already contain the key
+
+#ifdef BPTREE_IMPLEMENTATION
+
+
+
 
 
 
