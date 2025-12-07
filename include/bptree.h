@@ -121,13 +121,12 @@ static void bptree_debug_print(const bool enable, const char* fmt, ...) {
 }
 
 static size_t bptree_keys_area_size(const int max_keys) {
-    const size_t keys_size = (size_t)(max_keys + 1) * sizeof(bptree_key_t);
-    const size_t req_align = (sizeof(bptree_value_t) > sizeof(bptree_node*) ? sizeof(bptree_value_t) : sizeof(bptree_node*))
+    const size_t keys_size = (size_t)(max_keys + 1) * sizeof(bptree_key_t); // bptree offten store one extra key temporary for splitting, size_t unsigned integer for size
+    const size_t req_align = (sizeof(bptree_value_t) > sizeof(bptree_node*) ? sizeof(bptree_value_t) : sizeof(bptree_node*));
 
     // calculate required padding to meet alignement constrainte
-    const size_t
-
-
+    const size_t pad = (req_align - (keys_size % req_align)) % req_align;
+    return keys_size + pad;
 }
 
 
