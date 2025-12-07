@@ -42,8 +42,21 @@ typedef struct {
 typedef BPTREE_NUMERIC_TYPE bptree_key_t;
 #endif
 
-#ifndef BPTREE
+#ifndef BPTREE_VALUE_TYPE
+#define BPTREE_VALUE_TYPE void*
+#endif
 
+
+typedef BPTREE_VALUE_TYPE bptree_value_t;
+
+typedef enum { // STATUS CODE RETURNED BY B+TREE FUNCTIONS
+    BPTREE_OK = 0, // operation succeded
+    BPTREE_DUPLICATE_KEY, // duplicate key found
+    BPTREE_KEY_NOT_FOUND, // key not found
+    BPTREE_ALLOCATION_FAILURE, // memory allocation failure
+    BPTREE_INVALID_ARGUMENT, // invalid argument passed
+    BPTREE_INTERNAL_ERROR // internal consistency error
+} bptree_status;
 
 
 
