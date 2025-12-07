@@ -5,6 +5,26 @@
 extern "C" {
 #endif
 
+/*
+[Parent Node]
+│
+├── children[0] → [Child Node 0]
+│                 ├── Node Header (is_leaf, key_count, etc.)
+│                 ├── Key0
+│                 ├── Key1
+│                 ├── ... 
+│                 └── [Child of Child pointers...]
+│
+├── children[1] → [Child Node 1]
+│                 ├── Node Header
+│                 ├── Key0
+│                 └── ...
+│
+└── children[2] → [Child Node 2]
+                    ├── Node Header
+                    └── ...
+*/
+
 #ifndef BPTREE_STATIC // macro can be defined via compiler flag
 #ifdef _WIN32 // it define automatiquely when its windows
 #define BPTREE_API __declspec(dllexport) // Export symbol from DLL (Windows)
@@ -128,6 +148,29 @@ static size_t bptree_keys_area_size(const int max_keys) {
     const size_t pad = (req_align - (keys_size % req_align)) % req_align;
     return keys_size + pad;
 }
+
+
+// return the pointer to the array of keys that the node contain
+static bptree_key_t* bptree_node_keys(const bptree_node* node) { return (bptree_key_t*)node->data; }
+
+
+// return the value stored in a node for leaf nodes
+static bptree_value_t* bptree_node_values(bptree_node* node, const int max_keys) {
+    const size_t offset = bptree_keys_area_size(max_keys); // how many bytes occuped bu keys in data[] in node
+    return (bptree_value_t*)(node->data + offset); // skip the keys and retrieve the value
+}
+
+// it retrive the pointer to the first element in children nodes array
+static bptree_node** bptree_node_children(bptree_node* node, const int max_keys) {
+    const size_t offset = bptree_keys_area_size(max_keys);
+    return (bptree**)(node->data + offset)
+}
+
+
+
+
+
+
 
 
 
