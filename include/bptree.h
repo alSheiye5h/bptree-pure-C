@@ -107,7 +107,28 @@ BPTREE_API bool bptree_contains(const bptree* tree, const bptree_key_t* key); //
 
 #ifdef BPTREE_IMPLEMENTATION
 
+static void bptree_debug_print(const bool enable, const char* fmt, ...) {
+    if (!enable) return;
+    char time_buf[64];
+    const time_t now = time(NULL); // time(NULL) return the current time
+    const struct tm* tm_info = localtime(&now);
+    strftime(time_buf, sizeof(time_buf), "%Y-%m-%d %H:%M:%S", tm_info);
+    printf("[%s] [BPTREE DEBUG] ", time_buf);
+    va_list args; // variable that contain the arguments passed
+    va_start(args, fmt); // initialize args to point to arguments after fmt
+    vprintf(fmt, args); // same as printf but take va_list instead of separated variables
+    va_end(args); // clean up the va_list
+}
 
+static size_t bptree_keys_area_size(const int max_keys) {
+    const size_t keys_size = (size_t)(max_keys + 1) * sizeof(bptree_key_t);
+    const size_t req_align = (sizeof(bptree_value_t) > sizeof(bptree_node*) ? sizeof(bptree_value_t) : sizeof(bptree_node*))
+
+    // calculate required padding to meet alignement constrainte
+    const size_t
+
+
+}
 
 
 
