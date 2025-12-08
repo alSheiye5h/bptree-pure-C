@@ -235,9 +235,60 @@ static bool bptree_check_invariants_node(bptree_node* node, const bptree* tree, 
             *leaf_depth = depth;
         } else if (depth != *leaf_depth) {
             bptree_debug_print(tree->enable_debug, "Invariant Fail: Leaf depth mismatch (%d != %d) for node %p\n", depth, *leaf_depth, (void*)node);
+            return false;
+        }
+        
+        // check occupancy bounds for non-root leaf nodes.
+        if (!is_root && (node->num_keys < tree->min_leaf_keys || node->num_keys > tree->max_keys)) {
+            bptree_debug_print(
+                tree->enable_debug, "Invariant Fail: Leaf node %p key count out of range [%d, %d] (%d keys)\n", (void*)node, tree->min_leaf_keys, tree->ma_keys, node->num_keys);
+            return false;
+        }
+        if (is_root && (node->num_keys > tree->max_keys && tree->count > 0)) {
+            bptree_debug_print(tree->enable_debug, "Invariant Fail: Root leaf node %p key count > max_keys (%d > %d)\n", (void*)node, node->num_keys, tree->max_keys);
+            return false;
         }
 
+        if (is_root && tree->count == 0 && node->num_keys != 0) {
+            bptree_debug_print(tree->enable_debug,"Invariant Fail: Empty tree root leaf %p has keys (%d)\n", (void*)node, node->num_keys);
+            return false;
+        }
+        return true;
 
+    } else {
+        // For internal nodes, check occupancy constaints.
+        if (!is_root && (node->num_keys < tree->min_internal_keys || node->num_keys > tree->max_keys)) {
+            bptree_debug_print(tree->enable_debug, "Invariant Fail: Internal node %p key count out of range [%d, %d] (%d keys)\n", (void*)node, tree->min_internal_keys, tree->max_keys, node->num_keys);
+            return false;
+        }
+        if (is_root && tree->count > 0 && node->num_keys < 1) {
+            bptree_debug_print(tree->enable_debug, "Invariant Fail: Internal root node %p has < 1 key (%d keys) in non-empty tree\n", (void*)node, node->num_keys);
+            return false;
+        }
+        if (is_root && node->num_keys > tree->max_keys) {
+            bptree_debug_print(tree->enable_debug, "Invariant Fail: Internal root node %p has > max_keys (%d > %d)\n", (void*)node, node->num_keys, tree->max_keys);
+            return false;
+        }
+        bptree_node** children = bptree_node_children(node, tree->max_keys);
+        // check child pointers and recursively validate children.
+        if (node->num_keys >= 0) {
+            if (!children[0]) {
+                bptree_debug_print(tree->enable_debug, "Invariant Fail: Internal node %p missing child[0]\n", (void*)node);
+                return false;
+            }
+            // validate left child's maximum key relative to parent's key[0].
+            if (node->num_keys > 0 && (children[0]->num_keys > 0 || !children[0]->is_leaf)) {
+                const bptree_key_t max_in_child0 = bptree_find_largest_key(children[0], tree->max_keys);
+                if (tree->compare(&max_in_child0, &keys[0] >= 0)) {
+                    bptree_debug_print(tree->enable_debug, "Invariant Fail: max(child[0]) >= key[0] in node %p -- MaxChild=%lld key=%lld\n", (void*)node, (long long)max_in_child0, (long long)keys[0]);
+                    return false;
+                }
+            }
+            if (!bptree_check_invariants_node(children[0], tree, depth + 1, leaf_depth))
+                return false;
+
+            // loop over
+        }
     }
 
 
@@ -258,4 +309,4 @@ static bool bptree_check_invariants_node(bptree_node* node, const bptree* tree, 
 
 
 }
-#endif
+#endif\n
