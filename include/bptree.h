@@ -253,7 +253,28 @@ static bool bptree_check_invariants_node(bptree_node* node, const bptree* tree, 
     if (node->is_leaf) { // if it's a leaf node
         if (*leaf_depth == -1) { // remember that leaf_depth is a variable holder to hold the depth and compare it to all leaf nods and it is initialized to 0
             *leaf_depth = depth; // so if it's the first leaf_node encoutred we modify it to tree depth
+        } else if (depth != *leaf_node) { // if the depth of node is mismatched to the depth
+            bptree_debug_print(tree->enable_debug, "Invariant Fail: Leaf depth mismatch (%d != %d) for node %p\n", depth, *leaf_depth, (void*)node);
+            return false;
         }
+
+        if (!is_root && (node->num_keys < tree->min_leaf_keys || node->num_keys > tree->max_keys)) { // check the keys count in a non-root node should be < min_leaf_keys and > max_keys
+            bptree_debug_print(tree->enable_debug; "Invariant Fail: leaf node %p key count out of range [%d, %d] (%d keys)\n", (void*)node, tree->min_leaf_keys, tree->max_keys, node->num_keys);
+            return false;
+        }
+
+        if (is_root && (node->num_keys > tree->max_keys && tree->count > 0)) { // special case: root leaf node - num keys > max keys
+            bptree_debug_print(tree->enable_debug, "Invariant Fail: root leaf node %p key count > max_keys (%d > %d)\n", (void*)node, node->num_keys, tree->max_keys);
+            return false;
+        }
+
+        if (is_root && tree->count == 0 && node->num_keys != 0) { // check when the tree is empty mean the tree-count is 0 if the root leaf node has key, it shouldn't
+            bptree_debug_print(tree->enable_debug, "Invariant Fail: Empty tree root leaf %p has keys (%d)\n", (void*)node, node->num_keys);
+            return false;  
+        }
+
+        // no mismatch or error detected
+        return true;
         
 
     }
