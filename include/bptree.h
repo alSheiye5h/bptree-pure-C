@@ -292,7 +292,31 @@ static bool bptree_check_invariants_node(bptree_node* node, const bptree* tree, 
             return false;
         }
 
-        
+        // get a pointer to the array of child pointers from internal node
+        bptree_node** children = bptree_node_children(node, tree->max_keys);
+        if (node->num_keys >= 0) {
+            if (!children[0]) { // every internal node must have a left most child
+                bptree_debug_print(tree->enable_debug, "Invariant Fail: internal node %p missing child[0]\n", (void*)node);
+                return false;
+            }
+
+            if (node->num_keys > 0 && (children[0]->num_keys > 0 || !children[0]->is_leaf)) { // if the children is an anternal node that has keys
+                const bptree_key_t max_in_child0 = bptree_find_largest_key(children[0], tree->max_keys); // largest key in child node
+                if (tree->compare(&max_in_child0, &keys[0]) >= 0) { // if not : all the keys in child[0] left most child should be less than the left parent key
+                    bptree_debug_print(tree->enable_debug, "Invariant Fail: max(child[0]) >= key[0] in node %p --" "MaxChild=%lld key=%lld\n", (void*)node, (long long)max_in_child0, (long long)keys[0]);
+                    return false;
+                }
+            }
+
+            if (!bptree_check_invariants_node(children[0], tree, depth + 1, leaf_depth))
+                return false;
+
+            
+
+
+        }
+
+
 
 
     }
