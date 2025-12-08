@@ -311,19 +311,46 @@ static bool bptree_check_invariants_node(bptree_node* node, const bptree* tree, 
             if (!bptree_check_invariants_node(children[0], tree, depth + 1, leaf_depth))
                 return false;
 
-            
+            // we didnt include children[0] in the loop because of the comparison difference, 
+            // loop ober the remaining children
+            for (int i = 1; i <= node->num_keys; i++) {
+                if (!children[i]) { // childs must exist
+                    bptree_debug_print(tree->enable_debug, "Invariant Fail: Internal node %p missing child[%d]\n", (void*)node, i);
+                    return false;
+                }
 
+                if (children[i]->num_keys > 0 || !children[i]->is_leaf) { // children is an internal non-leaf or leaf and has keys node and has keys
+                    bptree_key_t min_in_child = bptree_find_smallest_key(children[i], tree->max_keys); // smaller children keys
+                    if (tree->compare(&keys[i - 1], &min_in_child) != 0) { // in a node the i - 1'th key must equal the i'th children's minimum key 
+                        bptree_debug_print(tree->enable_debug, "Invariante Fail: key[%d] != min(child[%d]) in node %p\n", i-1, i, (void*)node);
+                        return false;
+                    }
 
+                    if (i < node->num_keys) { // if the children is in between first and last childrens
+                        bptree_key_t max_in_child = bptree_find_largest_key(children[i], tree->max_keys); // find the largest key in that children
+                        if (tree->compare(&max_in_child, &keys[i]) >= 0) { // all children[i]'s keys must be less than key[i]
+                            bptree_debug_print(tree->enable_debug, "Invariant Fail: max(child[%d]) >= key[%d] in node %p\n", i, i, (void*)node);
+                            return false;
+                        }
+                    }
+                } else if (children[i]->is_leaf && children[i]->num_keys == 0 && tree->count > 0) { // internal nodes shouldn't point to empty leaf in non-empty tree
+                    bptree_debug_print(tree->enable_debug, "Invariant Fail: Internal node %p points to empty leaf ""child[%d] in non-empty tree\n");
+                    return false;
+                }
+
+                if (!bptree_check_invariants_node(children[i], tree, depth + 1, leaf_depth))  // depth + 1 because 
+                    return false;
+            }
+
+            } else {
+                if (!is_root || tree->count > 0) { // an internal node that has 0 keys in a non-empty tree
+                    bptree_debug_print(tree->enable_debug, "Invariant Fail: Internal node %p has < 0 keys (%d)\n", (void*)node, node->num_keys);
+                    return false;
+                }
+            }
+            return true;
         }
-
-
-
-
-    }
-
-
-
-
+    
 }
 
 
