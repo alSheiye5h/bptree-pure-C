@@ -205,13 +205,41 @@ static bptree_key_t bptree_find_largest_key(bptree_node* node, const int max_key
     return bptree_node_keys(node)[node->num_keys - 1]; // the normal last element
 }
 
-
-
 static int bptree_count_nodes(const bptree_node* node, const bptree* tree) {
     if (!node) return 0;
     if (node->is_leaf) return 1;
     int count = 1;
     bptree_node** children = bptree_node_children((bptree_node*)node, tree->max_keys);
+
+
+}
+
+
+static bool bptree_check_invariants_node(bptree_node* node, const bptree* tree, const int depth,
+                                         int* leaf_depth) {
+    if (!node) return false;
+    const bptree_key_t* keys = bptree_node_keys(node);
+    const bool is_root = (tree->root == node);
+
+    // check the key are in sorted order
+    for (int i = 1; i < node->num_keys; i++) {
+        if (tree->compare(&keys[i - 1], &keys[i]) >= 0) {
+            bptree_debug_print(tree->enable_debug, "Invariant Fail: Keys not sorted in node %p\n", (void*)node);
+            return;
+        }
+    }
+
+    if (node->is_leaf) {
+        // for leaf nodes, record depth and ensure all leaves have the same depth.
+        if (*leaf_depth == -1) {
+            *leaf_depth = depth;
+        } else if (depth != *leaf_depth) {
+            bptree_debug_print(tree->enable_debug, "Invariant Fail: Leaf depth mismatch (%d != %d) for node %p\n", depth, *leaf_depth, (void*)node);
+        }
+
+
+    }
+
 
 
 }
