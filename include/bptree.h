@@ -275,7 +275,15 @@ static bool bptree_check_invariants_node(bptree_node* node, const bptree* tree, 
 
         // no mismatch or error detected
         return true;
-        
+    } else {
+        // if it's an internal node, check occupancy constraint: occupancy are the keys occupying the node, constraints are the rules
+        if (!is_root && (node->num_keys < tree->min_internal_keys || node->num_keys > tree->max_keys)) { // out of range case : n_key should be < max and > min
+            bptree_debug_print(tree->enable_debug, "Invariant Fail: Internal node %p key count out of range [%d, %d] (%d keys)\n", (void*)node, tree->min_internal_keys, tree->max_keys, node->num_keys);
+            return false;
+        }
+
+        if (is_root && tree->count)
+
 
     }
 
