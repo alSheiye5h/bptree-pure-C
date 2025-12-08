@@ -282,7 +282,17 @@ static bool bptree_check_invariants_node(bptree_node* node, const bptree* tree, 
             return false;
         }
 
-        if (is_root && tree->count)
+        if (is_root && tree->count > 0 && node->num_keys < 1) { // tree->count > 0 so tree has items node n_keys should be > 0 so it can be splitted
+            bptree_debug_print(tree->enable_debug, "Invariant Fail: Internal root node %p has < 1 key (%d keys) in non-empty tree\n", (void*)node, node->num_keys);
+            return false;
+        }
+
+        if (is_root && node->num_keys > tree->max_keys) { // root node can't exed max can't have 'k + 1' or 'k if we start from 0' elements
+            bptree_debug_print(tree->enable_debug, "Invariant Fail: Internal root node %p has > max_keys (%d > %d)\n", (void*)node, node->num_keys, tree->max_keys);
+            return false;
+        }
+
+        
 
 
     }
