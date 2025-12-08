@@ -353,7 +353,7 @@ static bool bptree_check_invariants_node(bptree_node* node, const bptree* tree, 
     
 }
 
-
+// get the memory size needed to allocate a node
 static size_t bptree_node_alloc_size(const bptree* tree, const bool is_leaf) {
     const int max_keys = tree->max_keys;
     const size_t keys_area_size = bptree_keys_area_size(max_keys);
@@ -363,11 +363,16 @@ static size_t bptree_node_alloc_size(const bptree* tree, const bool is_leaf) {
     } else {
         data_payload_size = (size_t)(max_keys + 2)* sizeof(bptree_node*); // if it's internal it will hold pointers, for n keys it will hold n+1 keys so max_keys + 1, and for temporary n + 1 (extra key) keys we need (n + 1) + 1
     }
-    const size_t total_data_size_ = keys_area_size + data_payload_size;
-    return sizeof(bptree_node) + total_data_size_;
+    const size_t total_data_size_ = keys_area_size + data_payload_size; // keys + values or pointers
+    return sizeof(bptree_node) + total_data_size_; // size of the header(the structure) + total
 }
 
+// this function allocate a bptree node iwth the alignement and alignement is ensuring that the data will start at a memory adress that is multiple of their size making it easier for cpu
+static bptree_node* bptree_node_alloc(const bptree* tree, const bool is_leaf) {
+    size_t max_align = alignof(bptree_node);
+    max_align = (max_align > alignof(bptree_key_t)) ? max_align : alignof(bptree_key_t);
 
+}
 
 
 
