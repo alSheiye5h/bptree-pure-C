@@ -182,7 +182,39 @@ static int bptree_default_compare(const bptree_key_t* a, const bptree_key_t* b) 
 
 #endif
 
+// finding the smallest key by going down in left
+static bptree_key_t bptree_find_smallest_key(bptree_node* node, const int max_keys) {
+    assert(node != NULL); // node is not null
+    while (!node->is_leaf) { // while the node is an internal node
+        assert(node->num_keys >= 0); // node is valid and has keys
+        node = bptree_node_children(node, max_keys)[0]; // get childrens and affect the very left one to variable nod
+        assert(node != NULL);
+    }
+    assert(node->num_key > 0); // check if the node is valid and has keys
+    return bptree_node_keys(node)[0]; // return the very left key
+}
 
+static bptree_key_t bptree_find_largest_key(bptree_node* node, const int max_keys) {
+    assert(node != NULL);
+    while (!node->is_leaf) {
+        assert(node->num_keys >= 0); // for simplicity 
+        node = bptree_node_children(node)[node->num_keys] // num_keys + 1 because noode has one extra key so last element: the very right element
+        assert(node != NULL);
+    }
+    assert(node->num_keys > 0);
+    return bptree_node_keys(node)[node->num_keys - 1]; // the normal last element
+}
+
+
+
+static int bptree_count_nodes(const bptree_node* node, const bptree* tree) {
+    if (!node) return 0;
+    if (node->is_leaf) return 1;
+    int count = 1;
+    bptree_node** children = bptree_node_children((bptree_node*)node, tree->max_keys);
+
+
+}
 
 
 
