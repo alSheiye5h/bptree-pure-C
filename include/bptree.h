@@ -253,12 +253,12 @@ static bool bptree_check_invariants_node(bptree_node* node, const bptree* tree, 
     if (node->is_leaf) { // if it's a leaf node
         if (*leaf_depth == -1) { // remember that leaf_depth is a variable holder to hold the depth and compare it to all leaf nods and it is initialized to 0
             *leaf_depth = depth; // so if it's the first leaf_node encoutred we modify it to tree depth
-        } else if (depth != *leaf_node) { // if the depth of node is mismatched to the depth
+        } else if (depth != *leaf_depth) { // if the depth of node is mismatched to the depth
             bptree_debug_print(tree->enable_debug, "Invariant Fail: Leaf depth mismatch (%d != %d) for node %p\n", depth, *leaf_depth, (void*)node);
             return false;
         }
 
-        if (!is_root && (node->num_keys < tree->min_leaf_keys || node->num_keys > tree->max_keys)) { // check the keys count in a non-root node should be < min_leaf_keys and > max_keys
+        if (!is_root && (node->num_keys < tree->min_leaf_keys || node->num_keys > tree->max_keys)) { // check the keys count in a non-root node should be > min_leaf_keys and < max_keys
             bptree_debug_print(tree->enable_debug; "Invariant Fail: leaf node %p key count out of range [%d, %d] (%d keys)\n", (void*)node, tree->min_leaf_keys, tree->max_keys, node->num_keys);
             return false;
         }
@@ -334,7 +334,7 @@ static bool bptree_check_invariants_node(bptree_node* node, const bptree* tree, 
                         }
                     }
                 } else if (children[i]->is_leaf && children[i]->num_keys == 0 && tree->count > 0) { // internal nodes shouldn't point to empty leaf in non-empty tree
-                    bptree_debug_print(tree->enable_debug, "Invariant Fail: Internal node %p points to empty leaf ""child[%d] in non-empty tree\n");
+                    bptree_debug_print(tree->enable_debug, "Invariant Fail: Internal node %p points to empty leaf child[%d] in non-empty tree\n", (void*)node, i);
                     return false;
                 }
 
