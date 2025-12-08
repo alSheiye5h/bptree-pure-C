@@ -354,118 +354,25 @@ static bool bptree_check_invariants_node(bptree_node* node, const bptree* tree, 
 }
 
 
-
-
-
-
-
-
-
-
-
-
-
-// static bool bptree_check_invariants_node(bptree_node* node, const bptree* tree, const int depth,
-//                                          int* leaf_depth) {
-//     if (!node) return false;
-//     const bptree_key_t* keys = bptree_node_keys(node);
-//     const bool is_root = (tree->root == node);
-
-//     // check the key are in sorted order
-//     for (int i = 1; i < node->num_keys; i++) {
-//         if (tree->compare(&keys[i - 1], &keys[i]) >= 0) {
-//             bptree_debug_print(tree->enable_debug, "Invariant Fail: Keys not sorted in node %p\n", (void*)node);
-//             return;
-//         }
-//     }
-
-//     if (node->is_leaf) {
-//         // for leaf nodes, record depth and ensure all leaves have the same depth.
-//         if (*leaf_depth == -1) {
-//             *leaf_depth = depth;
-//         } else if (depth != *leaf_depth) {
-//             bptree_debug_print(tree->enable_debug, "Invariant Fail: Leaf depth mismatch (%d != %d) for node %p\n", depth, *leaf_depth, (void*)node);
-//             return false;
-//         }
-        
-//         // check occupancy bounds for non-root leaf nodes.
-//         if (!is_root && (node->num_keys < tree->min_leaf_keys || node->num_keys > tree->max_keys)) {
-//             bptree_debug_print(
-//                 tree->enable_debug, "Invariant Fail: Leaf node %p key count out of range [%d, %d] (%d keys)\n", (void*)node, tree->min_leaf_keys, tree->ma_keys, node->num_keys);
-//             return false;
-//         }
-//         if (is_root && (node->num_keys > tree->max_keys && tree->count > 0)) {
-//             bptree_debug_print(tree->enable_debug, "Invariant Fail: Root leaf node %p key count > max_keys (%d > %d)\n", (void*)node, node->num_keys, tree->max_keys);
-//             return false;
-//         }
-
-//         if (is_root && tree->count == 0 && node->num_keys != 0) {
-//             bptree_debug_print(tree->enable_debug,"Invariant Fail: Empty tree root leaf %p has keys (%d)\n", (void*)node, node->num_keys);
-//             return false;
-//         }
-//         return true;
-
-//     } else {
-//         // For internal nodes, check occupancy constaints.
-//         if (!is_root && (node->num_keys < tree->min_internal_keys || node->num_keys > tree->max_keys)) {
-//             bptree_debug_print(tree->enable_debug, "Invariant Fail: Internal node %p key count out of range [%d, %d] (%d keys)\n", (void*)node, tree->min_internal_keys, tree->max_keys, node->num_keys);
-//             return false;
-//         }
-//         if (is_root && tree->count > 0 && node->num_keys < 1) {
-//             bptree_debug_print(tree->enable_debug, "Invariant Fail: Internal root node %p has < 1 key (%d keys) in non-empty tree\n", (void*)node, node->num_keys);
-//             return false;
-//         }
-//         if (is_root && node->num_keys > tree->max_keys) {
-//             bptree_debug_print(tree->enable_debug, "Invariant Fail: Internal root node %p has > max_keys (%d > %d)\n", (void*)node, node->num_keys, tree->max_keys);
-//             return false;
-//         }
-//         bptree_node** children = bptree_node_children(node, tree->max_keys);
-//         // check child pointers and recursively validate children.
-//         if (node->num_keys >= 0) {
-//             if (!children[0]) {
-//                 bptree_debug_print(tree->enable_debug, "Invariant Fail: Internal node %p missing child[0]\n", (void*)node);
-//                 return false;
-//             }
-//             // validate left child's maximum key relative to parent's key[0].
-//             if (node->num_keys > 0 && (children[0]->num_keys > 0 || !children[0]->is_leaf)) {
-//                 const bptree_key_t max_in_child0 = bptree_find_largest_key(children[0], tree->max_keys);
-//                 if (tree->compare(&max_in_child0, &keys[0] >= 0)) {
-//                     bptree_debug_print(tree->enable_debug, "Invariant Fail: max(child[0]) >= key[0] in node %p -- MaxChild=%lld key=%lld\n", (void*)node, (long long)max_in_child0, (long long)keys[0]);
-//                     return false;
-//                 }
-//             }
-//             if (!bptree_check_invariants_node(children[0], tree, depth + 1, leaf_depth))
-//                 return false;
-
-//             // loop over remaining children.
-//             for (int i = 1; i <= node->num_keys; i++) {
-//                 if (!children[i]) {
-//                     bptree_debug_print(tree->enable_debug, "Invariant Fail: Internal node %p missing child[%d]\n", (void*)node, i);
-//                     return false;
-//                 }
-//                 if (children[i]->num_keys > 0 || !children[i]->is_leaf) {
-//                     bptree_key_t min_in_child = bptree_find_largest_key(children[i], tree->max_keys);
-//                     if (tree->compare(&keys[i - 1], &min_in_child) != 0) {
-//                         bptree_debug_print(tree->enable_debug, "Invariant Fail: key[%d] != min(child[%d]) in node %p\n", i - 1, i, (void*)node);
-//                         return false;
-//                     }
-//                     if (i < node->num_keys) {
-//                         bptree_key_t max_in_child = bptree_find_largest_key(children[i], tree->max_keys);
-//                         if (tree->compare(&max_in_child, &keys[i]) >= 0) {
-//                             bptree_debug_print(tree->enable_debug, "Invariant Fail: max(child[%d]) >= key[%d] in node %p\n", i, i, (void*)node);
-//                             return false;
-//                         }
-//                     }
-//                 } else if (children[i]->is_leaf && children[i]->num_keys == 0 && tree->count > 0) {
-//                     bptree_debug_print(tree->enable_debug, "Invariant Fail: internal node %p points to empty leaf child[%d] in non-empty tree\n", (void*)node, i);
-//                 }
-//             }
-//         }
-//     }
-
-
-
+static size_t bptree_node_alloc_size(const bptree* tree, const bool is_leaf) {
+    const int max_keys = tree->max_keys;
+    const size_t keys_area_size = bptree_keys_area_size(max_keys);
+    size_t data_payload_size;
+    if (is_leaf) {
+        data_payload_size = (size_t)(max_keys + 1) * sizeof(bptree_value_t); // if it's a leaf node it will hold values + one extra value for temporary overflow during the insertion
+    } else {
+        data_payload_size = (size_t)(max_keys + 2)* sizeof(bptree_node*); // if it's internal it will hold pointers, for n keys it will hold n+1 keys so max_keys + 1, and for temporary n + 1 (extra key) keys we need (n + 1) + 1
+    }
+    const size_t total_data_size_ = keys_area_size + data_payload_size;
+    return sizeof(bptree_node) + total_data_size_;
 }
+
+
+
+
+
+
+
 
 
 
