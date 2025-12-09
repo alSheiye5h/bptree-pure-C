@@ -540,6 +540,13 @@ static void bptree_rebalance_up(bptree* tree, bptree_node** node_stack, // node_
         }
         
         // If borrowing failed attempt merge when the sibling nodes dont have enought key to borrow they merge into one node
+        bptree_debug_print(tree->enable_debug, "Borrow failed attempting merge.\n");
+        if (child_idx > 0) {
+            // Merge with left siblings.
+
+
+
+        }
 
 
 
@@ -555,19 +562,4 @@ static void bptree_rebalance_up(bptree* tree, bptree_node** node_stack, // node_
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-}
-#endif\n
+#endif
