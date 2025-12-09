@@ -671,10 +671,16 @@ static void bptree_rebalance_up(bptree* tree, bptree_node** node_stack, // node_
     }
     
     // check a special case when root can became empty and depth is reduced
-    if (tree->root && !tree->root->is_leaf && tree->root->num_keys == 0)
-
-
-
+    if (tree->root && !tree->root->is_leaf && tree->root->num_keys == 0 && tree->count > 0) {
+        bptree_debug_print(tree->enable_debug, "root node is internal and empty, shrinking height.\n");
+        bptree_node* old_root = tree->root;
+        tree->root = bptree_node_children(old_root, tree->max_keys)[0];
+        tree->height--;
+        free(old_root);
+    } else if (tree->count == 0 && tree->root && tree->root->num_keys != 0) {
+        bptree_debug_print(tree->enable_debug, "Tree empty, ensuring root node is empty.\n");
+        tree->root->num_keys = 0;
+    }
 }
 
 
