@@ -369,8 +369,62 @@ static size_t bptree_node_alloc_size(const bptree* tree, const bool is_leaf) {
 
 // this function allocate a bptree node iwth the alignement and alignement is ensuring that the data will start at a memory adress that is multiple of their size making it easier for cpu
 static bptree_node* bptree_node_alloc(const bptree* tree, const bool is_leaf) {
-    size_t max_align = alignof(bptree_node);
-    max_align = (max_align > alignof(bptree_key_t)) ? max_align : alignof(bptree_key_t);
+    size_t max_align = alignof(bptree_node); // return the required alignement for a type
+    max_align = (max_align > alignof(bptree_key_t)) ? max_align : alignof(bptree_key_t); // find the maximum align of bptree_node(the header) and bptree_key
+    if (is_leaf) {
+        max_align = (max_align > alignof(bptree_value_t)) ? max_align : alignof(bptree_value_t); // for a leaf that holds values find the largest one and return it
+    } else {
+        max_align = (max_align > alignof(bptree_node*)) ? max_align : alignof(bptree_node*); // for internal that holds pointer to node find the largest and return it
+    }
+    size_t size = bptree_node_alloc_size(tree, is_leaf); // the total size needed for a node
+    
+    /* IT WORKS ONLY ON POW2 BITES 2, 4, 8, 16 ...
+        to a x be divisible by y x must have same 3 ending bits as y
+        so we applied the mask or the clearing bits
+        x = 76, y = 8; so 8 - 1 = ~(00000111) = 11111000 and 76 + 8 - 1 = (01010101)
+        so we applied x mask y
+        01010110  
+        11111000
+        01010000 = 80 > 76 divisible by 8
+    */
+    size = (size + max_align - 1) & ~(max_align - 1); // ~(max_align - 1) is the mask or the gate where (max_align - 1)'s bits will be reversed then applie the gate on size + max_align - 1
+    bptree_node* node = aligned_alloc(max_align, size); // located in stdlib : allocate size starting from an adress that is multiple of max_align
+    if (node) {
+        node->is_leaf = is leaf;
+        node->num_keys = 0;
+        node->next = NULL;
+    } else {
+        bptree_debug_print(tree->enable_debug, "Node allocation failed (size: %zu, align: %zu)\n", size, max_align);
+    }
+    return node;
+}
+
+// recursively free a node and it's childrens
+static void bptree_free_node(bptree_node* node, bptree* tree) {
+    if (!node) return;
+    if (!node->is_leaf) {
+        bptree_node** children = bptree_node_children(node, tree->max_keys);
+        for (int i = 0; i <= node->num_keys; i++) {
+            bptree_free_node(children[i], tree);
+        }
+    }
+    free(node);
+}
+
+// rebalancing the tree upward from a given node
+/*
+    after deletion, this function walks up the node stack and rebalances by borrowing keys from siblings or merging node if needed
+*/
+
+static void bptree_rebalance_up(bptree* tree, bptree_node** node_stack, // node_stack is array of node visited from root to where the deletion occured
+     const int* index_stack, const int depth) { // index stack is an array of (the child number of parent) the path to the current node ,the child choosed in each parent from root to the current node
+    for (int d = depth - 1; d >= 0; d--) { // loop bottom to up, starting from depth - 1 is the parent node from where the deletion occured
+        bptree_node* parent = node_stack[d]; // the current node being examined
+
+    }
+
+
+
 
 }
 
