@@ -600,8 +600,32 @@ static void bptree_rebalance_up(bptree* tree, bptree_node** node_stack, // node_
 
             // remove the parent separator that point to the merged node
             bptree_key_t* parent_keys = bptree_node_keys(parent);
-            memmove(&parent_keys[child_idx - 1], &parent_keys[child_idx], (parent->num_keys - child_idx) * sizeof(bptree_key_t));
-            memmove(&children[child_idx], &children[child_idx + 1], (parent->num_keys - child_idx))
+            memmove(&parent_keys[child_idx - 1], &parent_keys[child_idx], (parent->num_keys - child_idx) * sizeof(bptree_key_t)); // move the key to the previous key which is the separator
+            memmove(&children[child_idx], &children[child_idx + 1], (parent->num_keys - child_idx) * sizeof(bptree_node*)); // move the merged node into to deleted node
+            parent->num_keys--; // keys dec
+            bptree_debug_print(tree->enable_debug, "Merge with left complete. Parent updated.\n");
+        } else {
+            // Merge with right sibling if no left sibling is available
+            bptree_node* right_sibling = children[child_idx + 1];
+            bptree_debug_print(tree->enable_debug, "Mergin right sibling %d into child %d\n", child_idx + 1, child_idx);
+            if (child->is_leaf) {
+                bptree_key_t* child_key = bptree_node_keys(child);
+                bptree_value_t* child_vals = bptree_node_values(child, tree->max_keys);
+                const bptree_key_t* right_keys = bptree_node_keys(right_sibling);
+                const bptree_value_t* right_vals = bptree_node_values(right_sibling, tree->max_keys);
+                const int combined_keys = child->num_keys + right_children->num_keys;
+                if (combined_keys > tree->max_keys) {
+                    fprintf(stderr, "[BPTree FATAL] Merge-Right (Leaf) Buffer Overflow PREVENTED! Combined keys %d > max_keys %d.\n", combined_keys, tree->max_keys);
+                    abord();
+                }
+
+                memcpy(child_keys + child->num_keys, right_keys, right_sibling)
+
+
+            }
+
+
+
 
 
 
