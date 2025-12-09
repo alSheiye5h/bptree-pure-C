@@ -420,7 +420,114 @@ static void bptree_rebalance_up(bptree* tree, bptree_node** node_stack, // node_
      const int* index_stack, const int depth) { // index stack is an array of (the child number of parent) the path to the current node ,the child choosed in each parent from root to the current node
     for (int d = depth - 1; d >= 0; d--) { // loop bottom to up, starting from depth - 1 is the parent node from where the deletion occured
         bptree_node* parent = node_stack[d]; // the current node being examined
+        const int child_idx = index_stack[d]; // which child of parent need to be fixed
+        bptree_node** children = bptree_node_children(parent, tree->max_keys); // array of parent's childs pointers
+        bptree_node* child = children[child_idx]; // the underflowing child (has few keys) that need to be fixed
+        const int min_keys = child->is_leaf ? tree->min_leaf_keys : tree->min_internal_keys; // leaves and internal nodes can have differente mininmum key
 
+        // if the node has enought keys, no need for rebalancing
+        if (child->num_keys >= min_keys) {
+            bptree_debug_print(tree->enable_debug, "Rebalancing unnecessary at depth %d, child %d has %d keys (min %d)\n", d, child_idx, child->num_keys, min_keys);
+            break;
+        }
+
+        bptree_debug_print(tree->enable_debug, "Rebalancing needed at depth %d for child %d (%d keys < min %d)\n", d, child_idx, child->num_keys, min_keys);
+
+        //Try borrowing frim the left sibling
+        if (child_idx > 0) { // if not leftmostchild
+            bptree_node* left_sibling = children[child_idx - 1]; // child_idx current child_idx - 1 left sibling 
+            const int left_min = left_sibling->is_leaf ? tree->min_leaf_keys : tree->min_internal_keys;
+            if (left_sibling->num_keys > left_min) {
+                bptree_debug_print(tree->enable_debug, "Attempting borrow from left sibling (idx %d)\n", child_idx - 1);
+                bptree_key_t* parent_keys = bptree_node_keys(parent); // get the parent keys to update separator later
+                if (child->is_leaf) {
+                    bptree_key_t* child_keys = bptree_node_keys(child); // retrieve keys
+                    bptree_value_t* child_vals = bptree_node_values(child, tree->max_keys); // retrieve values array because it's leaf
+                    const bptree_key_t* left_keys = bptree_node_keys(left_sibling); // retrieve left sibling's keys array 
+                    const bptree_value_t* left_vals = bptree_node_values(left_sibling, tree->max_keys); // retrieve left sibling's values array 
+                    
+                    // shift keys and values right, to open space at index 0
+                    // memove(des, src, n_bytes);
+                    memmove(&child_keys[1], &child_keys[0], child->num_keys * sizeof(bptree_key_t)); // move the bytes in adress &child_keys[0] to &child_keys[1] by child->num_keys * sizeof(bptree_key_t) bytes
+                    memmove(&child_vals[1], &child_vals[0], child->num_keys * sizeof(bptree_value_t)); // move the bytes in adress &child_vals[0] to &child_vals[1] by child->num_key * sizeof(bptree_value_t) bytes
+                    
+                    // move the last key/value from the left sibling.
+                    child_keys[0] = left_keys[left_sibling->num_keys - 1];
+                    child_vals[0] = left_keys[left_sibling->num_keys - 1];
+                    child->num_keys++; // update keys count
+                    left_sibling->num_keys--;
+
+                    // update the parent separator
+                    parent_keys[child_idx - 1] = child_keys[0];
+                    bptree_debug_print(tree->enable_debug, "Borrowed leaf key from left. Parent key updated.\n");
+                    break;
+                } else {
+                    // Internal node case: shift keys and children to insert the borrowed key.
+                    bptree_key_t* child_keys = bptree_node_keys(child); // get the keys
+                    bptree_node** child_children = bptree_node_children(child, tree->max_keys); // get the childrens because it's internal has nodes not vals
+                    bptree_key_t* left_keys = bptree_node_keys(left_sibling); // get left sibling keys
+                    bptree_node** left_children = bptree_node_children(left_sibling, tree->max_keys); //get children of left sibling
+
+                    // move keys and childrens right to have room in 0
+                    memmove(&child_keys[1], &child_keys[0], child->num_keys * sizeof(bptree_key_t)); // make room in keys[0]
+                    memmove(&child_children[1], &child_children[0], (child->num_keys + 1) * sizeof(bptree_node*)); // move the pointers right
+
+                    child_keys[0] = parent_keys[child_idx - 1]; // move the parent key separator to child 0
+                    child_children[0] = left_children[left_sibling->num_keys]; // move the right most child pointer from left sibling
+
+                    parent_keys[child_idx - 1] = left_keys[left_sibling->num_keys - 1]; // move the largest key of sibling to up parent
+
+                    // update the count
+                    child->num_keys++;
+                    left_sibling->num_keys--;
+                    bptree_debug_print(tree->enable_debug, "Borrowed internal key/child from left. Parent key updated.\n");
+                    break;
+                }
+            }
+        }
+
+        // try borrowing from right siblings
+        if (child_idx < parent->num_keys) { // if it's not the rightmost child
+            bptree_node* right_sibling = children[child_idx + 1]; // get the right sibling
+            const int right_min = right_sibling->is_leaf ? tree->min_leaf_keys : tree->min_internal_keys; // check if leaf or internal and get minimum key
+            if (right_sibling->num_keys > right_min) { // if right sibling has more than minimum
+                bptree_debug_print(tree->enable_debug, "Attempting borrow from right sibling (idx %d)\n", child_idx + 1);
+                bptree_key_t* parent_keys = bptree_node_keys(parent); // get the key separator
+                if (child->is_leaf) {
+                    bptree_key_t* child_keys = bptree_node_keys(child); // get the keys
+                    bptree_value_t* child_vals = bptree_node_values(child, tree->max_keys); // get values
+                    bptree_key_t* right_keys = bptree_node_keys(right_sibling); // get keys of right sibling
+                    bptree_vale_t* right_vals = bptree_node_values(right_sibling, tree->max_keys); // get the values of right sibling
+
+                    // borrow the first key/value from the right sibling
+                    child_keys[child->num_keys] = right_keys[0]; // move the leftmost key in the right sibling to the extra key
+                    child_vals[child->num_keys] = right_vals[0]; // do the same with values
+                    child->num_keys++; // update
+                    right_sibling->num_keys++; // update
+
+                    // shift right sibling's keys/values left.
+                    memmove(&right_keys[0], &right_keys[1], right_sibling->num_keys * sizeof(bptree_key_t));
+                    memmove(&right_vals[0], &right_vals[1], (right_sibling->num_keys + 1) * sizeof(bptree_vale_t));
+
+                    // move the last key/value from the left sibling.
+                    child_key[0] = left_keys[left_sibling->num_keys - 1];
+
+
+
+                }
+
+            }
+
+
+        }
+
+
+                }
+            }
+
+
+        }
+    
     }
 
 
