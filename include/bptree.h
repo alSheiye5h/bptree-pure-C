@@ -572,15 +572,36 @@ static void bptree_rebalance_up(bptree* tree, bptree_node** node_stack, // node_
                 bptree_node** child_children = bptree_node_children(child, tree->max_keys); // get children
                 const int combined_keys = left_sibling->num_keys + 1 + child->num_keys; // combined keys: 1 is for the parent key splitting them
                 const int combined_children = (left_sibling->num_keys + 1) + (child->num_keys + 1);
-                if (combined_keys > tree->max_keys) {
-                    
+                if (combined_keys > tree->max_keys) { // if combined keys are larger that max keys : overflow
+                    fprintf(stderr, "[BPTree FATAL] Merge-Left (Internal) Key Buffer Overflow PREVENTED! Combined keys %d > buffer %d.\n",
+                            combined_keys, tree->max_keys);
+                            abord();
+                }
+                if (combined_children > tree->max_keys + 1) { // if combined childrens are larger that max childrens : overflow
+                    fprintf(stderr,
+                            "[BPTree FATAL] Merge-Left (Internal) Children Buffer Overflow "
+                            "PREVENTED! Combined children %d > buffer %d.\n",
+                            combined_children, tree->max_keys + 1);
+                    abort();
                 }
 
+                // move the parent separator to the very right
+                left_keys[left_sibling->num_keys] = parent_keys[child_idx - 1];
+                
+                // move the keys/childrens in right node to the left node after parent separator
+                memcpy(left_keys + left_sibling->num_keys + 1, child_keys, child->num_keys * sizeof(bptree_key_t));
+                memcpy(left_children + left_sibling->num_keys + 1, child_children, (child->num_keys + 1) * sizeof(bptree_node*));
 
-
-
-
+                // update left node num keys and delete the child
+                left_sibling->num_keys = combined_children;
+                free(child);
+                children[child_idx] = NULL;
             }
+
+            // remove the parent separator that point to the merged node
+            bptree_key_t* parent_keys = bptree_node_keys(parent);
+            memmove(&parent_keys[child_idx - 1], &parent_keys[child_idx], (parent->num_keys - child_idx) * sizeof(bptree_key_t));
+            memmove(&children[child_idx], &children[child_idx + 1], (parent->num_keys - child_idx))
 
 
 
