@@ -556,6 +556,29 @@ static void bptree_rebalance_up(bptree* tree, bptree_node** node_stack, // node_
                     abord();
                 }
 
+                // copy all keys and values from child to the left sibling
+                memcpy(left_keys + left_sibling->num_keys, child_keys, child->num_keys * sizeof(bptree_key_t)); // copy child_keys to left_keys[left_sibling->num_keys]
+                memcpy(left_vals + left_sibling->num_keys, child_vals, child->num_keys * sizeof(bptree_value_t)); // copy child_vals to left_vals[left_sibling->num_keys]
+
+                left_sibling->num_keys = combined_keys;
+                left_sibling->next = child->next; // child will be deleted it's next is the leftsibling's next
+                
+                free(child);
+                children[child_idx] = NULL;
+            } else { // if it's an internal node 
+                bptree_key_t* left_keys = bptree_node_keys(left_sibling); // again get the leftsibling's key
+                bptree_node** left_children = bptree_node_children(left_sibling, tree->max_keys); // get lft children
+                bptree_key_t* child_keys = bptree_node_keys(child); // get node keys
+                bptree_node** child_children = bptree_node_children(child, tree->max_keys); // get children
+                const int combined_keys = left_sibling->num_keys + 1 + child->num_keys; // combined keys: 1 is for the parent key splitting them
+                const int combined_children = (left_sibling->num_keys + 1) + (child->num_keys + 1);
+                if (combined_keys > tree->max_keys) {
+                    
+                }
+
+
+
+
 
             }
 
