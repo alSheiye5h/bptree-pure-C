@@ -543,6 +543,21 @@ static void bptree_rebalance_up(bptree* tree, bptree_node** node_stack, // node_
         bptree_debug_print(tree->enable_debug, "Borrow failed attempting merge.\n");
         if (child_idx > 0) {
             // Merge with left siblings.
+            bptree_node* left_sibling = children[child_idx - 1]; // get the left sibling
+            bptree_debug_print(tree->enable_debug, "Merging child %d into left sibling %d\n", child_idx, child_idx - 1);
+            if (child->is_leaf) {
+                bptree_key_t* left_keys = bptree_node_keys(left_sibling); // key left sibling's keys
+                bptree_value_t* left_vals = bptree_node_values(left_sibling, tree->max_keys); // get the leftsibling's values
+                const bptree_key_t* child_keys = bptree_node_keys(child);
+                const bptree_value_t* child_vals = bptree_node_values(child, tree->max_keys);
+                const int combined_keys = left_sibling->num_keys + child->num_keys;
+                if (combined_keys > tree->max_keys) {
+                    fprintf(stderr, "[BPTree FATAL] Merge-Left (Leaf) Buffer Overflow PREVENTED! Combined keys %d > max_keys %d.\n", combined_keys, tree->max_keys);
+                    abord();
+                }
+
+
+            }
 
 
 
