@@ -417,7 +417,7 @@ static void bptree_free_node(bptree_node* node, bptree* tree) {
 */
 
 static void bptree_rebalance_up(bptree* tree, bptree_node** node_stack, // node_stack is array of node visited from root to where the deletion occured
-     const int* index_stack, const int depth) { // index stack is an array of (the child number of parent) the path to the current node ,the child choosed in each parent from root to the current node
+    const int* index_stack, const int depth) { // index stack is an array of (the child number of parent) the path to the current node ,the child choosed in each parent from root to the current node
     for (int d = depth - 1; d >= 0; d--) { // loop bottom to up, starting from depth - 1 is the parent node from where the deletion occured
         bptree_node* parent = node_stack[d]; // the current node being examined
         const int child_idx = index_stack[d]; // which child of parent need to be fixed
@@ -619,22 +619,63 @@ static void bptree_rebalance_up(bptree* tree, bptree_node** node_stack, // node_
                     abord();
                 }
 
-                memcpy(child_keys + child->num_keys, right_keys, right_sibling)
+                memcpy(child_keys + child->num_keys, right_keys, right_sibling->num_keys * sizeof(bptree_key_t));
+                memcpy(child_vals + child->num_keys, right_vals, right_sibling->num_keys * sizeof(bptree_value_t));
 
 
+                child->num_keys = combined_keys;
+                child->next = right_sibling->next;
+
+                free(right_children);
+                children[child_idx + 1] = NULL;
+            } else {
+                bptree_key_t* child_keys = bptree_node_keys(child);
+                bptree_node** child_children = bptree_node_children(child, tree->max_keys);
+                const bptree_key_t* right_keys = bptree_node_keys(right_sibling);
+                const bptree_node** right_children = bptree_node_children(right_children, tree->max_keys);
+                const bptree_key_t* parent_keys = bptree_node_keys(parent);
+                const int combined_keys = child->num_keys + 1 + right_sibling->num_keys;
+                const int combined_children = child->num_keys + 1 + right_sibling->num_keys + 1;
+                if (combined_keys > tree->max_keys) {
+                    fprintf(stderr,
+                            "[BPTree FATAL] Merge-Right (Internal) Key Buffer Overflow PREVENTED! "
+                            "Combined keys %d > buffer %d.\n",
+                            combined_keys, tree->max_keys);
+                    abort();
+                }
+                if (combined_children > tree->max_keys + 1) {
+                    fprintf(stderr,
+                            "[BPTree FATAL] Merge-Right (Internal) Children Buffer Overflow "
+                            "PREVENTED! Combined children %d > buffer %d.\n",
+                            combined_children, tree->max_keys + 1);
+                    abort();
+                }
+                child_keys[child->num_keys] = parent_keys[child_idx];
+
+                memcpy(child_keys + child->num_keys + 1, right_keys, (right_sibling->num_keys + 1) * sizeof(bptree_key_t));
+                memcpy(child_children + child->num_keys + 1, right_children, (right_sibling->num_keys + 1) * sizeof(bptree_node*));
+                
+                child->num_keys = combined_keys;
+                free(right_sibling);
+                children[child_idx] = NULL;
             }
-
-
-
-
-
-
-        }
-
-
+            bptree_key_t* parent_keys = bptree_node_keys(parent);
+            memmove(&parent_keys[child_idx], &parent_keys[child_idx + 1],
+                    (parent->num_keys - child_idx - 1) * sizeof(bptree_key_t));
+            memmove(&children[child_idx + 1], &children[child_idx + 2],
+                    (parent->num_keys - child_idx - 1) * sizeof(bptree_node*));
+            parent->num_keys--;
+            bptree_debug_print(tree->enable_debug, "Merge with right complete. Parent updated.\n");
 
         }
     }
+    
+    // check a special case when root can became empty and depth is reduced
+    if (tree->root && !tree->root->is_leaf && tree->root->num_keys == 0)
+
+
+
+}
 
 
 }
